@@ -206,6 +206,9 @@ std::pair<int, int> makesResonance(Leptons &leps, Lepton lep1, Lepton lep2, floa
             return {2, imu};
         }
     }
+    if(lep1.absid()==lep2.absid() && (lep1.idx()!=lep2.idx())){
+        if(fabs((lep1.p4()+lep2.p4()).M()-mass)<window){ return{1,lep2.idx()};}
+    }
     return {-1, -1};
 }
 
@@ -232,6 +235,8 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
     std::vector<Leptons> hyp6s;
     std::vector<Leptons> hyp7s;
     std::vector<Leptons> hyp8s;
+
+    bool isZRes = false; 
 
     // make all possible pairs of leptons
     std::vector<Leptons> hyps = make_hyps(leptons); // hyp leptons pass pt, eta and loose id
@@ -269,9 +274,79 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
                 if ( lep.is_loose() ) nloose += 1;
                 // remember to check for mass resonances
                 std::pair<int,int> z_mass_info = makesResonance(leptons,mlhyp[0],lep,91,15);
+                // bool isSF = false;
+                // if(z_mass_info.first==1){
+                //     if(mlhyp[0].absid()==leptons[z_mass_info.second].absid()){isSF=true;}
+                // }
+                // else if(z_mass_info.first==2){
+                //     if(lep.absid()==leptons[z_mass_info.second].absid()){isSF=true;}
+                // }
                 std::pair<int,int> gs_mass_info = makesResonance(leptons,mlhyp[0],lep,0,12);
-                if (z_mass_info.first>=0 || gs_mass_info.first>=0) {
-                  hyp1s.push_back(mlhyp);
+                // if ((z_mass_info.first>=0&&isSF) || gs_mass_info.first>=0) {
+                if ((z_mass_info.first>=0) || gs_mass_info.first>=0) {
+                    if(z_mass_info.first>=0){
+                        if(z_mass_info.first==1){
+                            if (mlhyp[0].absid()==11){
+                                if(mlhyp[0].pt()>Electron_pt()[z_mass_info.second]){
+                                    hyp1s.push_back({mlhyp[0],Lepton(Electron_pdgId()[z_mass_info.second],z_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Electron_pdgId()[z_mass_info.second],z_mass_info.second),mlhyp[0]});
+                                }
+                            }else{
+                                if(mlhyp[0].pt()>Muon_pt()[z_mass_info.second]){
+                                    hyp1s.push_back({mlhyp[0],Lepton(Muon_pdgId()[z_mass_info.second],z_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Muon_pdgId()[z_mass_info.second],z_mass_info.second),mlhyp[0]});
+                                }
+                            }
+                        }else{
+                            if (lep.absid()==11){
+                                if(lep.pt()>Electron_pt()[z_mass_info.second]){
+                                    hyp1s.push_back({lep,Lepton(Electron_pdgId()[z_mass_info.second],z_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Electron_pdgId()[z_mass_info.second],z_mass_info.second),lep});
+                                }
+                            }else{
+                                if(lep.pt()>Muon_pt()[z_mass_info.second]){
+                                    hyp1s.push_back({lep,Lepton(Muon_pdgId()[z_mass_info.second],z_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Muon_pdgId()[z_mass_info.second],z_mass_info.second),lep});
+                                }
+                            }
+                        }
+                    }else{
+                        if(gs_mass_info.first==1){
+                            if (mlhyp[0].absid()==11){
+                                if(mlhyp[0].pt()>Electron_pt()[gs_mass_info.second]){
+                                    hyp1s.push_back({mlhyp[0],Lepton(Electron_pdgId()[gs_mass_info.second],gs_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Electron_pdgId()[gs_mass_info.second],gs_mass_info.second),mlhyp[0]});
+                                }
+                            }else{
+                                if(mlhyp[0].pt()>Muon_pt()[gs_mass_info.second]){
+                                    hyp1s.push_back({mlhyp[0],Lepton(Muon_pdgId()[gs_mass_info.second],gs_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Muon_pdgId()[gs_mass_info.second],gs_mass_info.second),mlhyp[0]});
+                                }
+                            }
+                        }else{
+                            if (lep.absid()==11){
+                                if(lep.pt()>Electron_pt()[gs_mass_info.second]){
+                                    hyp1s.push_back({lep,Lepton(Electron_pdgId()[gs_mass_info.second],gs_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Electron_pdgId()[gs_mass_info.second],gs_mass_info.second),lep});
+                                }
+                            }else{
+                                if(lep.pt()>Muon_pt()[gs_mass_info.second]){
+                                    hyp1s.push_back({lep,Lepton(Muon_pdgId()[gs_mass_info.second],gs_mass_info.second)});
+                                }else{
+                                    hyp1s.push_back({Lepton(Muon_pdgId()[gs_mass_info.second],gs_mass_info.second),lep});
+                                }
+                            }
+                        }
+                    }
+                  // hyp1s.push_back(mlhyp);
+                  isZRes = true;
                   break; // ok for now
                 }
             } // end loop over ML hyp leptons
@@ -325,17 +400,96 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
             if ((lep1.p4() + lep2.p4()).M() < 12.) { continue; }
         }
         auto z_result = makesResonance(leptons, lep1, lep2, 91., 15.);
+        // bool isSF = false;
+        // if(verbose){
+        //     cout << "z_result: " << z_result.first << "\t" << z_result.second << endl;
+        //     cout << "\t idx: " << lep1.idx() << "\t" << lep2.idx() << "\t" << leptons[z_result.second].idx() << endl;
+        //     cout << "\t ids: " << lep1.id() << "\t" << lep2.id() << "\t" << leptons[z_result.second].id() << endl;
+        // }
+        // if(z_result.first==1){
+        //     if(lep1.absid()==leptons[z_result.second].absid()){isSF=true;}
+        // }
+        // else if(z_result.first==2){
+        //     if(lep2.absid()==leptons[z_result.second].absid()){isSF=true;}
+        // }
+        // if (verbose){cout << "\t" << isSF << endl;}
         auto gammastar_result = makesResonance(leptons, lep1, lep2, 0., 12.);
-        bool extraZ = z_result.first >= 0;
+        bool extraZ = (z_result.first >= 0 /*&& isSF*/);
+        if (extraZ){isZRes=true;}
         bool extraGammaStar = gammastar_result.first >= 0;
         if(verbose){cout << extraZ << " " << extraGammaStar << endl;}
         int DEBUG_hyp_class = -1;
-        if ((extraZ || extraGammaStar) && isss) {
+        // if ((extraZ || extraGammaStar) && isss) {
+        if ((extraZ || extraGammaStar) /*&& isss*/) {
             DEBUG_hyp_class = 1;
-            if (lep1.pt() > lep2.pt())
-                hyp1s.push_back({lep1, lep2});
-            else
-                hyp1s.push_back({lep2, lep1});
+
+            if(extraZ){
+                if(z_result.first==1){
+                    if (lep1.absid()==11){
+                        if(lep1.pt()>Electron_pt()[z_result.second]){
+                            hyp1s.push_back({lep1,Lepton(Electron_pdgId()[z_result.second],z_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Electron_pdgId()[z_result.second],z_result.second),lep1});
+                        }
+                    }else{
+                        if(lep1.pt()>Muon_pt()[z_result.second]){
+                            hyp1s.push_back({lep1,Lepton(Muon_pdgId()[z_result.second],z_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Muon_pdgId()[z_result.second],z_result.second),lep1});
+                        }
+                    }
+                }else{
+                    if (lep2.absid()==11){
+                        if(lep2.pt()>Electron_pt()[z_result.second]){
+                            hyp1s.push_back({lep2,Lepton(Electron_pdgId()[z_result.second],z_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Electron_pdgId()[z_result.second],z_result.second),lep2});
+                        }
+                    }else{
+                        if(lep2.pt()>Muon_pt()[z_result.second]){
+                            hyp1s.push_back({lep2,Lepton(Muon_pdgId()[z_result.second],z_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Muon_pdgId()[z_result.second],z_result.second),lep2});
+                        }
+                    }
+                }
+            }else{
+                if(gammastar_result.first==1){
+                    if (lep1.absid()==11){
+                        if(lep1.pt()>Electron_pt()[gammastar_result.second]){
+                            hyp1s.push_back({lep1,Lepton(Electron_pdgId()[gammastar_result.second],gammastar_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Electron_pdgId()[gammastar_result.second],gammastar_result.second),lep1});
+                        }
+                    }else{
+                        if(lep1.pt()>Muon_pt()[gammastar_result.second]){
+                            hyp1s.push_back({lep1,Lepton(Muon_pdgId()[gammastar_result.second],gammastar_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Muon_pdgId()[gammastar_result.second],gammastar_result.second),lep1});
+                        }
+                    }
+                }else{
+                    if (lep2.absid()==11){
+                        if(lep2.pt()>Electron_pt()[gammastar_result.second]){
+                            hyp1s.push_back({lep2,Lepton(Electron_pdgId()[gammastar_result.second],gammastar_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Electron_pdgId()[gammastar_result.second],gammastar_result.second),lep2});
+                        }
+                    }else{
+                        if(lep2.pt()>Muon_pt()[gammastar_result.second]){
+                            hyp1s.push_back({lep2,Lepton(Muon_pdgId()[gammastar_result.second],gammastar_result.second)});
+                        }else{
+                            hyp1s.push_back({Lepton(Muon_pdgId()[gammastar_result.second],gammastar_result.second),lep2});
+                        }
+                    }
+                }
+            }
+
+
+            // if (lep1.pt() > lep2.pt())
+            //     hyp1s.push_back({lep1, lep2});
+            // else
+            //     hyp1s.push_back({lep2, lep1});
         } else if (ntight == 2 && isss) {
             DEBUG_hyp_class = 4;
             if (lep1.pt() > lep2.pt())
@@ -547,7 +701,7 @@ void dumpLeptonProperties(Lepton lep) {
     int i = lep.idx();
     if (lep.is_el()) {
         std::cout << "  -- etaSC: " << Electron_eta()[i] + Electron_deltaEtaSC()[i] << std::endl;
-        std::cout << "  -- mva: " << Electron_mvaFall17V1noIso()[i] << std::endl;
+        // std::cout << "  -- mva: " << Electron_mvaFall17V1noIso()[i] << std::endl;
         std::cout << "  -- lostHits: " << Electron_lostHits()[i] << std::endl;
         std::cout << "  -- miniRelIso: " << Electron_miniPFRelIso_all()[i] << std::endl;
         std::cout << "  -- ptRatio: " << 1/(Electron_jetRelIso()[i] + 1) << std::endl;
@@ -589,8 +743,13 @@ std::vector<bool> cleanJets(Jets &jets, Leptons &leps) {
         std::vector<bool> ret;
         for (unsigned int idx=0; idx<jets.size();idx++) {ret.push_back(1);}
         for (auto lep : leps) {
-            float mindr = 0.41;
+            // float mindr = 0.41;
+            float mindr = 0.40;
             int minidx=-1;
+
+            // if (lep.idlevel() < SS::IDLevel::IDfakable) continue;
+            if (lep.idlevel() != SS::IDLevel::IDfakable && lep.idlevel() != SS::IDLevel::IDtight) continue;
+
             for (unsigned int idx=0; idx<jets.size(); idx++) {
                 float dr = ROOT::Math::VectorUtil::DeltaR(lep.p4(),jets[idx].p4());
                 if (dr < mindr) {
@@ -630,14 +789,14 @@ std::pair<Jets, Jets> getJets(float min_jet_pt, float min_bjet_pt, int jesVar) {
     Jets bjets_;
     for (unsigned int idx=0; idx<nt.nJet();idx++){
         Jet jet(idx);
-        if (std::fabs(jet.eta()) > 2.4) continue;
+        if (std::fabs(jet.eta()) > 2.5) continue;
         if (jesVar==0 && jet.pt() < min_bjet_pt) continue;
-        if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
-        if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
+        // if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
+        // if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
         if (!jet.passJetId()) continue;
         if (jesVar==0 && jet.pt() > min_jet_pt) jets_.push_back(jet);
-        if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
-        if (jesVar==1 && jet.pt_jesup() > min_jet_pt) jets_.push_back(jet);
+        // if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
+        // if (jesVar==1 && jet.pt_jesup() > min_jet_pt) jets_.push_back(jet);
         if (jet.isBtag()) bjets_.push_back(jet);
     }
     return std::make_pair(jets_,bjets_);
@@ -648,20 +807,20 @@ std::pair<Jets, Jets> getJets(std::vector<Lepton> &leps, float min_jet_pt, float
     // get all jets passing kinematics (pt,eta) and jet ID
     for (unsigned int idx=0; idx<nt.nJet();idx++){
         Jet jet(idx);
-        if (std::fabs(jet.eta()) > 2.4) continue;
+        if (std::fabs(jet.eta()) > 2.5) continue;
         if (jesVar==0 && jet.pt() < min_bjet_pt) continue;
-        if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
-        if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
+        // if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
+        // if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
         if (!jet.passJetId()) continue;
 
         if (jesVar==0 && jet.pt() > min_jet_pt) jets_.push_back(jet);
         else if (jesVar==0 && jet.pt() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
         
-        if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
-        else if (jesVar==-1 && jet.pt_jesdown() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
+        // if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
+        // else if (jesVar==-1 && jet.pt_jesdown() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
         
-        if (jesVar==1 && jet.pt_jesup() > min_jet_pt) jets_.push_back(jet);
-        else if (jesVar==1 && jet.pt_jesup() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
+        // if (jesVar==1 && jet.pt_jesup() > min_jet_pt) jets_.push_back(jet);
+        // else if (jesVar==1 && jet.pt_jesup() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
     }
 
     Jets ret_jets_;
@@ -674,11 +833,11 @@ std::pair<Jets, Jets> getJets(std::vector<Lepton> &leps, float min_jet_pt, float
         if (jesVar==0 && jets_[idx].pt() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
         if (jesVar==0 && jets_[idx].pt() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
 
-        if (jesVar==-1 && jets_[idx].pt_jesdown() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
-        if (jesVar==-1 && jets_[idx].pt_jesdown() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
+        // if (jesVar==-1 && jets_[idx].pt_jesdown() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
+        // if (jesVar==-1 && jets_[idx].pt_jesdown() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
 
-        if (jesVar==1 && jets_[idx].pt_jesup() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
-        if (jesVar==1 && jets_[idx].pt_jesup() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
+        // if (jesVar==1 && jets_[idx].pt_jesup() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
+        // if (jesVar==1 && jets_[idx].pt_jesup() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
     }
 
     return std::make_pair(ret_jets_,ret_bjets_);

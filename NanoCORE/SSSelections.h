@@ -130,10 +130,10 @@ struct Jet {
         isData_ = nt.isData();
         id_ = nt.Jet_jetId()[idx_];
         pt_ = nt.Jet_pt()[idx_];
-        if(!isData_){
-            pt_jesup_ = nt.Jet_pt_jesTotalUp()[idx_];
-            pt_jesdown_ = nt.Jet_pt_jesTotalDown()[idx_];
-        }
+        // if(!isData_){
+        //     pt_jesup_ = nt.Jet_pt_jesTotalUp()[idx_];
+        //     pt_jesdown_ = nt.Jet_pt_jesTotalDown()[idx_];
+        // }
         eta_ = nt.Jet_eta()[idx_];
         phi_ = nt.Jet_phi()[idx_];
         p4_ = nt.Jet_p4()[idx_];
@@ -143,12 +143,12 @@ struct Jet {
     unsigned int idx() const { return idx_; }
     LorentzVector p4() { return p4_; }
     float pt() { return pt_; }
-    float pt_jesup() { if(!isData_) {return pt_jesup_;} else {return -1;} }
-    float pt_jesdown() { if(!isData_) {return pt_jesdown_;} else {return -1;} }
+    // float pt_jesup() { if(!isData_) {return pt_jesup_;} else {return -1;} }
+    // float pt_jesdown() { if(!isData_) {return pt_jesdown_;} else {return -1;} }
     float eta() { return eta_; }
     float phi() { return phi_; }
     float bdisc() {return nt.Jet_btagDeepFlavB()[idx_];}
-    float cdisc() {return nt.Jet_btagDeepFlavC()[idx_];}
+    // float cdisc() {return nt.Jet_btagDeepFlavC()[idx_];}
     bool isBtag() {
         if (nt.year()==2016) {return bdisc()>0.3093;}
         else if (nt.year()==2017) {return bdisc()>0.3033;}
