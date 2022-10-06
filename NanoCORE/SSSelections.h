@@ -17,6 +17,8 @@ struct Lepton {
             mass_ = (abs(id_) == 11 ? nt.Electron_mass()[idx_] : nt.Muon_mass()[idx_]);
             p4_ = (abs(id_) == 11 ? nt.Electron_p4()[idx_] : nt.Muon_p4()[idx_]);
             miniIso_ = (abs(id_) == 11 ? nt.Electron_miniPFRelIso_all()[idx_] : nt.Muon_miniPFRelIso_all()[idx_]);
+            ptRatio_ = (abs(id_) == 11 ? 1 / (nt.Electron_jetRelIso().at(idx_) + 1) : 1 / (nt.Muon_jetRelIso().at(idx_) + 1));
+            ptRel_  = (abs(id_) == 11 ? nt.Electron_jetPtRelv2().at(idx_) : nt.Muon_jetPtRelv2().at(idx_));
             dxy_ = (abs(id_) == 11 ? nt.Electron_dxy()[idx_] : nt.Muon_dxy()[idx_]);
             dz_ = (abs(id_) == 11 ? nt.Electron_dz()[idx_] : nt.Muon_dz()[idx_]);
             if (!isData_){
@@ -66,6 +68,8 @@ struct Lepton {
     float miniIso() { return miniIso_;}
     float dxy() { return dxy_;}
     float dz() { return dz_;}
+    float ptratio() {return ptRatio_;}
+    float ptrel() {return ptRel_;}
     bool is_loose() {return (idlevel_==SS::IDLevel::IDfakable || idlevel_==SS::IDLevel::IDtight);}
     bool is_tight() {return (idlevel_==SS::IDLevel::IDtight);}
     bool operator==(const Lepton& other) {return ((this->id_ == other.id()) && (this->idx_==other.idx()));}
@@ -84,6 +88,8 @@ struct Lepton {
     float mass_ = 0.;
     LorentzVector p4_;
     float miniIso_ = -1.;
+    float ptRatio_ = -1.;
+    float ptRel_ = -1.;
     float dxy_ = -1.;
     float dz_ = -1.;
     unsigned int idx_;
@@ -150,9 +156,9 @@ struct Jet {
     float bdisc() {return nt.Jet_btagDeepFlavB()[idx_];}
     // float cdisc() {return nt.Jet_btagDeepFlavC()[idx_];}
     bool isBtag() {
-        if (nt.year()==2016) {return bdisc()>0.3093;}
-        else if (nt.year()==2017) {return bdisc()>0.3033;}
-        else if (nt.year()==2018) {return bdisc()>0.2770;}
+        if (nt.year()==2016) {return bdisc()>0.2598;}
+        else if (nt.year()==2017) {return bdisc()>0.3040;}
+        else if (nt.year()==2018) {return bdisc()>0.2783;}
         else {return false;}
     }
     int hadronFlavor() {return nt.Jet_hadronFlavour()[idx_];}

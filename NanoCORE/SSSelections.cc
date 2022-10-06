@@ -151,11 +151,23 @@ std::tuple<int, int, float> getJetInfo(Leptons &leps, int variation) {
 // check dilepton mass resonances
 std::pair<int, int> makesResonance(Leptons &leps, Lepton lep1, Lepton lep2, float mass, float window) {
     // return {which lepton (1,2), and index of resonance partner}
+    // for (auto &lep_a : leps){
+    //     for(auto &lep_b : leps){
+    //         if(lep_a.absid()!=lep_b.absid()){continue;}
+    //         if(lep_a.idx()==lep_b.idx()){continue;}
+    //         if(fabs(lep_a.eta())>2.5||fabs(lep_b.eta())>2.5){continue;}
+    //         if(lep_a.pt()<7||lep_b.pt()<7){continue;}
+    //         if(lep_a.idlevel()<SS::IDveto||lep_b.idlevel()<SS::IDveto){continue;}
+    //         if(lep_a.id() == -1*lep_b.id() &&(fabs((lep_a.p4() + lep_b.p4()).M() - mass) < window)){
+    //             return{lep_a.idx(),lep_b.idx()};
+    //         }
+    //     }
+    // }
     for (auto &lep : leps) {
         if (lep.is_el()) {
             if (!(lep1.is_el() || lep2.is_el())) { continue; }
             if ((lep.idx() == lep1.idx() && lep1.is_el()) || (lep.idx() == lep2.idx() && lep2.is_el())) { continue; }
-            if (fabs(lep.eta()) > 2.4) { continue; }
+            if (fabs(lep.eta()) > 2.5) { continue; }
             if (lep.pt() < 7) { continue; }
             if (lep.idlevel() < SS::IDveto) { continue; }
             if (lep1.is_el() && (lep1.id() * lep.id() < 0) && (fabs((lep1.p4() + lep.p4()).M() - mass) < window)) {
@@ -180,7 +192,7 @@ std::pair<int, int> makesResonance(Leptons &leps, Lepton lep1, Lepton lep2, floa
     }
     for (unsigned int iel = 0; iel < Electron_pt().size(); iel++) {
         if ((iel == lep1.idx() && lep1.is_el()) || (iel == lep2.idx() && lep2.is_el())) continue;
-        if (fabs(Electron_eta()[iel]) > 2.4) continue;
+        if (fabs(Electron_eta()[iel]) > 2.5) continue;
         if (fabs(Electron_pt()[iel]) < 7) continue;
         if (!SS::electronID(iel, SS::IDveto, year())) continue;
         if (lep1.is_el() && (lep1.id() * Electron_pdgId()[iel] < 0) &&
@@ -236,7 +248,7 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
     std::vector<Leptons> hyp7s;
     std::vector<Leptons> hyp8s;
 
-    bool isZRes = false; 
+    // bool isZRes = false; 
 
     // make all possible pairs of leptons
     std::vector<Leptons> hyps = make_hyps(leptons); // hyp leptons pass pt, eta and loose id
@@ -273,7 +285,7 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
                 if ( lep.is_tight() ) ntight += 1;
                 if ( lep.is_loose() ) nloose += 1;
                 // remember to check for mass resonances
-                std::pair<int,int> z_mass_info = makesResonance(leptons,mlhyp[0],lep,91,15);
+                std::pair<int,int> z_mass_info = makesResonance(leptons,mlhyp[0],lep,91.2,15);
                 // bool isSF = false;
                 // if(z_mass_info.first==1){
                 //     if(mlhyp[0].absid()==leptons[z_mass_info.second].absid()){isSF=true;}
@@ -346,7 +358,7 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
                         }
                     }
                   // hyp1s.push_back(mlhyp);
-                  isZRes = true;
+                  // isZRes = true;
                   break; // ok for now
                 }
             } // end loop over ML hyp leptons
@@ -366,7 +378,7 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
         if (verbose) {
             cout << "I can read the gconf year. It's " << year() << " ok?? Get off my back." << endl;
             bool DEBUG_isss = lep1.charge() == lep2.charge();
-            auto DEBUG_z_result = makesResonance(leptons, lep1, lep2, 91., 15.);
+            auto DEBUG_z_result = makesResonance(leptons, lep1, lep2, 91.2, 15.);
             auto DEBUG_gammastar_result = makesResonance(leptons, lep1, lep2, 0., 12.);
             bool DEBUG_extraZ = DEBUG_z_result.first >= 0;
             bool DEBUG_extraGammaStar = DEBUG_gammastar_result.first >= 0;
@@ -397,9 +409,17 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
 
         // Veto SS ee or any OSSF, with mll < 12
         if ((isss && lep1.is_el() && lep2.is_el()) || (lep1.id() == -lep2.id())) {
-            if ((lep1.p4() + lep2.p4()).M() < 12.) { continue; }
+            if ((lep1.p4() + lep2.p4()).M() < 12.) { 
+                // cout << "in SSSelections, found low mass z" << endl;
+                if(lep1.pt() > lep2.pt()){
+                    hyp1s.push_back({lep1,lep2});
+                }else{
+                    hyp1s.push_back({lep2,lep1});
+                }
+                // continue;
+            }
         }
-        auto z_result = makesResonance(leptons, lep1, lep2, 91., 15.);
+        auto z_result = makesResonance(leptons, lep1, lep2, 91.2, 15.);
         // bool isSF = false;
         // if(verbose){
         //     cout << "z_result: " << z_result.first << "\t" << z_result.second << endl;
@@ -415,7 +435,7 @@ std::pair<int, Leptons> getBestHypFCNC(Leptons &leptons, bool verbose) {
         // if (verbose){cout << "\t" << isSF << endl;}
         auto gammastar_result = makesResonance(leptons, lep1, lep2, 0., 12.);
         bool extraZ = (z_result.first >= 0 /*&& isSF*/);
-        if (extraZ){isZRes=true;}
+        // if (extraZ){isZRes=true;}
         bool extraGammaStar = gammastar_result.first >= 0;
         if(verbose){cout << extraZ << " " << extraGammaStar << endl;}
         int DEBUG_hyp_class = -1;
@@ -582,7 +602,7 @@ std::pair<int, Hyp> getBestHyp(Leptons &leptons, bool verbose) {
             if (verbose) {
                 cout << "I can read the gconf year. It's " << year() << " ok?? Get off my back." << endl;
                 bool DEBUG_isss = lep1.charge() == lep2.charge();
-                auto DEBUG_z_result = makesResonance(leptons, lep1, lep2, 91., 15.);
+                auto DEBUG_z_result = makesResonance(leptons, lep1, lep2, 91.2, 15.);
                 auto DEBUG_gammastar_result = makesResonance(leptons, lep1, lep2, 0., 12.);
                 bool DEBUG_extraZ = DEBUG_z_result.first >= 0;
                 bool DEBUG_extraGammaStar = DEBUG_gammastar_result.first >= 0;
@@ -622,7 +642,7 @@ std::pair<int, Hyp> getBestHyp(Leptons &leptons, bool verbose) {
             if ((isss && lep1.is_el() && lep2.is_el()) || (lep1.id() == -lep2.id())) {
                 if ((lep1.p4() + lep2.p4()).M() < 12.) { continue; }
             }
-            auto z_result = makesResonance(leptons, lep1, lep2, 91., 15.);
+            auto z_result = makesResonance(leptons, lep1, lep2, 91.2, 15.);
             auto gammastar_result = makesResonance(leptons, lep1, lep2, 0., 12.);
             bool extraZ = z_result.first >= 0;
             bool extraGammaStar = gammastar_result.first >= 0;
@@ -739,6 +759,29 @@ SS::IDLevel whichLeptonLevel(int id, int idx) {
     }
 }
 
+// std::vector<bool> cleanJets(Jets &jets, Leptons &leps) {
+//         std::vector<bool> ret;
+//         for (unsigned int idx=0; idx<jets.size();idx++) {ret.push_back(1);}
+//         for (auto lep : leps) {
+//             // float mindr = 0.41;
+//             float mindr = 0.40;
+//             int minidx=-1;
+
+//             // if (lep.idlevel() < SS::IDLevel::IDfakable) continue;
+//             if (lep.idlevel() != SS::IDLevel::IDfakable && lep.idlevel() != SS::IDLevel::IDtight) continue;
+
+//             for (unsigned int idx=0; idx<jets.size(); idx++) {
+//                 float dr = ROOT::Math::VectorUtil::DeltaR(lep.p4(),jets[idx].p4());
+//                 if (dr < mindr) {
+//                     mindr = dr;
+//                     minidx = idx;
+//                 }
+//             }
+//             if (minidx>=0) {ret[minidx]=0;}
+//         }
+//         return ret;
+// }
+
 std::vector<bool> cleanJets(Jets &jets, Leptons &leps) {
         std::vector<bool> ret;
         for (unsigned int idx=0; idx<jets.size();idx++) {ret.push_back(1);}
@@ -753,11 +796,12 @@ std::vector<bool> cleanJets(Jets &jets, Leptons &leps) {
             for (unsigned int idx=0; idx<jets.size(); idx++) {
                 float dr = ROOT::Math::VectorUtil::DeltaR(lep.p4(),jets[idx].p4());
                 if (dr < mindr) {
-                    mindr = dr;
-                    minidx = idx;
+                    // mindr = dr;
+                    // minidx = idx;
+                    ret[idx]=0;
                 }
             }
-            if (minidx>=0) {ret[minidx]=0;}
+            // if (minidx>=0) {ret[minidx]=0;}
         }
         return ret;
 }
@@ -794,7 +838,7 @@ std::pair<Jets, Jets> getJets(float min_jet_pt, float min_bjet_pt, int jesVar) {
         // if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
         // if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
         if (!jet.passJetId()) continue;
-        if (jesVar==0 && jet.pt() > min_jet_pt) jets_.push_back(jet);
+        if (jesVar==0 && jet.pt() >= min_jet_pt) jets_.push_back(jet);
         // if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
         // if (jesVar==1 && jet.pt_jesup() > min_jet_pt) jets_.push_back(jet);
         if (jet.isBtag()) bjets_.push_back(jet);
@@ -803,18 +847,34 @@ std::pair<Jets, Jets> getJets(float min_jet_pt, float min_bjet_pt, int jesVar) {
 }
 
 std::pair<Jets, Jets> getJets(std::vector<Lepton> &leps, float min_jet_pt, float min_bjet_pt, int jesVar) {
+
+    std::vector<bool> passJetBaseline;
+    for (unsigned int idx=0; idx<nt.nJet();idx++) {passJetBaseline.push_back(0);}
+    
     Jets  jets_;
+    // cout << "min jet pt: " << min_jet_pt << "\t min bjet pt: " << min_bjet_pt << endl;
     // get all jets passing kinematics (pt,eta) and jet ID
     for (unsigned int idx=0; idx<nt.nJet();idx++){
         Jet jet(idx);
+        jets_.push_back(jet);
+        // cout << "jet idx: " << idx << endl;
         if (std::fabs(jet.eta()) > 2.5) continue;
+        // cout << "\teta:\t" << jet.eta() << endl;
         if (jesVar==0 && jet.pt() < min_bjet_pt) continue;
+        // cout << "\tpt:\t" << jet.pt() << endl;
         // if (jesVar==-1 && jet.pt_jesdown() < min_bjet_pt) continue;
         // if (jesVar==1 && jet.pt_jesup() < min_bjet_pt) continue;
         if (!jet.passJetId()) continue;
+        // cout << "\tpassjetid:\t" << jet.passJetId() << endl;
 
-        if (jesVar==0 && jet.pt() > min_jet_pt) jets_.push_back(jet);
-        else if (jesVar==0 && jet.pt() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
+        if (jesVar==0 && jet.pt() >= min_jet_pt) {
+            passJetBaseline[idx]=1;
+            // cout << "\tadded to jets" << endl;
+        }
+        else if (jesVar==0 && jet.pt() >= min_bjet_pt && jet.isBtag()){ 
+            passJetBaseline[idx]=1;
+            // cout << "\tadded to bjets" << endl;
+        }
         
         // if (jesVar==-1 && jet.pt_jesdown() > min_jet_pt) jets_.push_back(jet);
         // else if (jesVar==-1 && jet.pt_jesdown() > min_bjet_pt && jet.isBtag()) jets_.push_back(jet);
@@ -828,10 +888,21 @@ std::pair<Jets, Jets> getJets(std::vector<Lepton> &leps, float min_jet_pt, float
     // remove jets overlapping with our selected leptons
     std::vector<bool> jet_flags = cleanJets(jets_,leps);
     for (unsigned int idx=0; idx<jet_flags.size(); idx++) {
+        Jet jet(idx);
+        // cout << "jet idx: " << idx << endl;
+        if(!passJetBaseline[idx]) continue;
+        // cout << "\tbaseline:\t" << passJetBaseline[idx] << endl;
         if (!jet_flags[idx]) continue;
+        // cout << "\tclean:\t" << jet_flags[idx] << endl;
 
-        if (jesVar==0 && jets_[idx].pt() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
-        if (jesVar==0 && jets_[idx].pt() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
+        if (jesVar==0 && jet.pt() >= min_jet_pt) {
+            ret_jets_.push_back(jet);
+            // cout << "\tadded to return jets" << endl;
+        }
+        if (jesVar==0 && jet.pt() >= min_bjet_pt && jet.isBtag()) {
+            ret_bjets_.push_back(jet);
+            // cout << "\tadded to return bjets" << endl;
+        }
 
         // if (jesVar==-1 && jets_[idx].pt_jesdown() > min_jet_pt) ret_jets_.push_back(jets_[idx]);
         // if (jesVar==-1 && jets_[idx].pt_jesdown() > min_bjet_pt && jets_[idx].isBtag()) ret_bjets_.push_back(jets_[idx]);
@@ -850,7 +921,7 @@ Leptons getTightLeptons(){
     // int leptonCounter_ = -1;
     for (auto lep : leps) {
         if (lep.idlevel() != SS::IDLevel::IDtight) continue;
-        if (std::fabs(lep.eta())>2.4) continue;
+        if (std::fabs(lep.eta())>2.5) continue;
         // leptonCounter_++;
         float min_lep_pt = 20.;
         // float min_lep_pt = lep.is_mu() ? 20. : 25.;
@@ -867,7 +938,7 @@ Leptons getLooseLeptons() {
     // int leptonCounter_ = -1;
     for (auto lep : leps) {
         if ( !(lep.idlevel() == SS::IDLevel::IDfakable || lep.idlevel() == SS::IDLevel::IDtight) ) continue;
-        if (std::fabs(lep.eta())>2.4) continue;
+        if (std::fabs(lep.eta())>2.5) continue;
         // leptonCounter_++;
         float min_lep_pt = 20.;
         // float min_lep_pt = lep.is_mu() ? 20. : 25.;
